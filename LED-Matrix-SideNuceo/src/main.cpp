@@ -3,7 +3,8 @@
 
 Ticker ticker;
 
-BusOut      line_select(PC_0, PC_1, PC_2, PC_3);
+BusOut      line_select(PC_0, PC_1, PC_2);
+DigitalOut  line_D(PC_3);
 
 DigitalOut  OE(PA_5);
 DigitalOut  CLK(PA_6);
@@ -20,12 +21,12 @@ uint8_t buffer_RED[32][128];
 uint8_t buffer_GREEN[32][128];
 uint8_t buffer_BLUE[32][128];
 
-void timerInterrupt() {
+void timerISR() {
     static uint8_t line = 0;
     static uint8_t PWM = 0;
     uint8_t x;
     
-    for (x = 0; x > 128; x++){
+    for (x = 0; x < 128; x++){
         R0 = buffer_RED[line][x]      > PWM;
         R1 = buffer_RED[line+16][x]   > PWM;
         G0 = buffer_GREEN[line][x]    > PWM;
@@ -41,13 +42,18 @@ void timerInterrupt() {
     LAT = 1;
     LAT = 0;
 
-    line_select = line;
+    line_select = line & 0b0111;
+    line_D = line < 0b1000 ? 1 : 0;
+    wait_us(2);
+    line_D = line < 0b1000 ? 0 : 1;
+
     OE = 0;
 
-    if (++line > 15) {
+    line++;
+
+    if (line >= 16) {
         line = 0;
-        PWM++;
-        if(PWM >= 10) PWM = 0;
+        PWM++; if(PWM >= 10) PWM = 0;
     }
 }
 
@@ -55,18 +61,18 @@ int main() {
     // put your setup code here, to run once:
     uint8_t x, y;
 
-    ticker.attach_us(&timerInterrupt, 100);
-    wait(0.2);
+    ticker.attach_us(&timerISR, 100);
+    wait_us(2e5);
 
     while(1) {
         // put your main code here, to run repeatedly:
-        x = 32.00 * rand() / RAND_MAX;
-        y = 128.0 * rand() / RAND_MAX;
+        x = 128.0 * rand() / RAND_MAX;
+        y = 32.00 * rand() / RAND_MAX;
 
-        buffer_RED[y][x] = 10.00 * rand() / RAND_MAX;
+        buffer_RED[y][x]   = 10.00 * rand() / RAND_MAX;
         buffer_GREEN[y][x] = 10.00 * rand() / RAND_MAX;
-        buffer_BLUE[y][x] = 10.00 * rand() / RAND_MAX;
+        buffer_BLUE[y][x]  = 10.00 * rand() / RAND_MAX;
 
-        wait(0.002);
+        wait_us(2e3);
     }
 }
