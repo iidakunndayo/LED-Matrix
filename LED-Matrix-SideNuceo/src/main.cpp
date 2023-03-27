@@ -6,7 +6,7 @@ Ticker ticker;
 BusOut      line_select(PC_0, PC_1, PC_3);
 DigitalOut  line_D(PC_2);
 
-DigitalOut  OE(PA_5);
+DigitalOut  OE(PA_5, 1);
 DigitalOut  CLK(PA_6);
 DigitalOut  LAT(PA_7);
 
@@ -45,16 +45,13 @@ void timerISR() {
     OE = 0;
 
     line++;
-    if (line > 15) {
+    if (line >= 16) {
         line = 0;
     }
 }
 
 int main() {
-    ticker.attach_us(&timerISR, 100);
-    wait_us(2e5);
+    ticker.attach_us(&timerISR, 100000);
 
-    while(1) {
-        wait_us(2e3);
-    }
+    while(1) {}
 }
